@@ -3,12 +3,14 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any
-from openai import OpenAI
 from agents import function_tool
+import os
 
 # ---------------- Configuration ----------------
-SERVICE_FILE = 'service_account.json'
-CALENDAR_ID = 'noopur.khachane@gmail.com'
+SERVICE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'service_account.json')
+CALENDAR_ID = os.environ.get('CALENDAR_ID')
+if not CALENDAR_ID:
+    raise ValueError("CALENDAR_ID environment variable must be set")
 
 # ---------------- Google Calendar Setup ----------------
 creds = service_account.Credentials.from_service_account_file(
@@ -123,13 +125,13 @@ TOOL_HANDLERS = {
 
 # ---------------- OpenAI Function Tools ----------------
 @function_tool
-def list_events_tool() -> List[Dict[str, str]]:
+def list_calendar_events() -> List[Dict[str, str]]:
     """List events from Google Calendar within a 2-week window (±2 weeks from now)."""
     return list_events({})
 
 
 @function_tool
-def create_event_tool(name: str, start: str, end: str, description: str = "") -> Dict[str, str]:
+def create_calendar_event(name: str, start: str, end: str, description: str = "") -> Dict[str, str]:
     """Create a new event in Google Calendar."""
     return create_event({
         "name": name,
@@ -144,7 +146,7 @@ OPENAI_FUNCTIONS = [
     {
         "type": "function",
         "function": {
-            "name": "list_events_tool",
+            "name": "list_calendar_events",
             "description": "List events from Google Calendar within a 2-week window (±2 weeks from now)",
             "parameters": {
                 "type": "object",
@@ -156,7 +158,7 @@ OPENAI_FUNCTIONS = [
     {
         "type": "function",
         "function": {
-            "name": "create_event_tool",
+            "name": "create_calendar_event",
             "description": "Create a new event in Google Calendar",
             "parameters": {
                 "type": "object",
@@ -186,8 +188,8 @@ OPENAI_FUNCTIONS = [
 
 # Function dispatcher for OpenAI function calling
 OPENAI_FUNCTION_MAP = {
-    "list_events_tool": list_events_tool,
-    "create_event_tool": create_event_tool,
+    "list_calendar_events": list_calendar_events,
+    "create_calendar_event": create_calendar_event,
 }
 
 

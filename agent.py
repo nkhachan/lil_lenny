@@ -1,10 +1,6 @@
-import asyncio
-import random
-
 import numpy as np
 
-from agents import Agent, function_tool
-from agents.extensions.handoff_prompt import prompt_with_handoff_instructions
+from agents import Agent
 from agents.voice import (
     AudioInput,
     SingleAgentVoiceWorkflow,
@@ -13,8 +9,9 @@ from agents.voice import (
 )
 from audio_player import AudioPlayer
 from recording_util import record_audio
-from corepower_tools import get_corepower_reservations
-from gcalender_mcp_server import list_events_tool, create_event_tool
+from yoga.corepower_tools import get_yoga_reservations, get_yoga_classes, make_yoga_reservation
+from gcalendar.gcalender_mcp_server import list_calendar_events, create_calendar_event
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,9 +20,8 @@ agent = Agent(
     name="Assistant",
     instructions=
         "You're speaking to a human, so be polite and concise. Speak in english.",
-        #" If the user asks about the weather in any city, call the `get_weather` tool.",
     model="gpt-5-mini",
-    tools=[get_corepower_reservations, list_events_tool, create_event_tool],
+    tools=[get_yoga_classes, get_yoga_reservations, make_yoga_reservation, list_calendar_events, create_calendar_event],
 )
 
 
@@ -34,7 +30,7 @@ class WorkflowCallbacks(SingleAgentWorkflowCallbacks):
         print(f"[debug] User input: {transcription}")
 
 
-async def main():
+async def main_voice():
     pipeline = VoicePipeline(
         workflow=SingleAgentVoiceWorkflow(agent, callbacks=WorkflowCallbacks())
     )
@@ -53,5 +49,4 @@ async def main():
             player.add_audio(np.zeros(24000 * 1, dtype=np.int16))
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
