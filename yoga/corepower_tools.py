@@ -171,7 +171,7 @@ def make_yoga_reservation(
 
 
 @function_tool
-def remove_yoga_reservation(
+def delete_yoga_reservation(
     reservation_id: int,
 ) -> dict:
     """

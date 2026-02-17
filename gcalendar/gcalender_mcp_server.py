@@ -46,6 +46,17 @@ TOOLS = [
             },
             "required": ["name", "start", "end"]
         }
+    },
+    {
+        "name": "delete_event",
+        "description": "Delete a Google Calendar event",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "event_id": {"type": "string", "description": "The ID of the event to delete"}
+            },
+            "required": ["event_id"]
+        }
     }
 ]
 
@@ -74,9 +85,9 @@ def list_events(args: Dict[str, Any]) -> List[Dict[str, str]]:
 
     return [{
         "summary": e.get('summary'),
-        "start": e['start'].get('dateTime', e['start'].get('date')),
-        "end": e["end"].get("dateTime", e["end"].get("date"))
-    } for e in events]
+        "start": e['start'].get('dateTime'),
+        "end": e["end"].get("dateTime")
+    } for e in events if e['start'].get('dateTime')]
 
 
 def create_event(args: Dict[str, Any]) -> Dict[str, str]:
@@ -116,10 +127,35 @@ def create_event(args: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
+def delete_event(args: Dict[str, Any]) -> Dict[str, str]:
+    """
+    Delete an event from Google Calendar.
+
+    Args:
+        args: Dictionary containing:
+            - event_id: The ID of the event to delete (required)
+
+    Returns:
+        Dictionary with success message
+    """
+    event_id = args["event_id"]
+
+    service.events().delete(
+        calendarId=CALENDAR_ID,
+        eventId=event_id
+    ).execute()
+
+    return {
+        "success": True,
+        "message": f"Event {event_id} deleted successfully"
+    }
+
+
 # ---------------- Tool Dispatcher ----------------
 TOOL_HANDLERS = {
     "list_events": list_events,
     "create_event": create_event,
+    "delete_event": delete_event,
 }
 
 
@@ -139,6 +175,12 @@ def create_calendar_event(name: str, start: str, end: str, description: str = ""
         "end": end,
         "description": description
     })
+
+
+@function_tool
+def delete_calendar_event(event_id: str) -> Dict[str, str]:
+    """Delete an event from Google Calendar."""
+    return delete_event({"event_id": event_id})
 
 
 # OpenAI function schemas for use with OpenAI API
@@ -183,6 +225,23 @@ OPENAI_FUNCTIONS = [
                 "required": ["name", "start", "end"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_calendar_event",
+            "description": "Delete an event from Google Calendar",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "event_id": {
+                        "type": "string",
+                        "description": "The ID of the event to delete"
+                    }
+                },
+                "required": ["event_id"]
+            }
+        }
     }
 ]
 
@@ -190,6 +249,7 @@ OPENAI_FUNCTIONS = [
 OPENAI_FUNCTION_MAP = {
     "list_calendar_events": list_calendar_events,
     "create_calendar_event": create_calendar_event,
+    "delete_calendar_event": delete_calendar_event,
 }
 
 
